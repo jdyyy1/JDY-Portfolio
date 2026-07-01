@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Jonathan Davis Dy — Portfolio</title>
+  <link rel="icon" type="image/jpeg" href="favicon.jpg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@300;400;500&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet" />
   <style>
@@ -745,6 +746,91 @@
       .skills-extra { grid-template-columns: 1fr; }
       .projects-grid { grid-template-columns: 1fr; }
     }
+
+    /* PREVIEW PANEL STYLES */
+    .preview-panel {
+      position: absolute;
+      z-index: 1000;
+      width: 320px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(10px) scale(0.95);
+      transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+    }
+
+    .preview-panel.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(25, 29, 41, 0.9);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+    }
+
+    .preview-dots {
+      display: flex;
+      gap: 5px;
+    }
+
+    .preview-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .preview-dot.red { background: #ff5f56; }
+    .preview-dot.yellow { background: #ffbd2e; }
+    .preview-dot.green { background: #27c93f; }
+
+    .preview-title {
+      flex-grow: 1;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-align: center;
+      margin-right: 30px; /* balance out the dots spacing */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .preview-body {
+      position: relative;
+      width: 320px;
+      height: 180px; /* 16:9 Aspect Ratio */
+      background: #13161f;
+      overflow: hidden;
+    }
+
+    .preview-iframe {
+      width: 1280px;
+      height: 720px;
+      border: none;
+      transform: scale(0.25);
+      transform-origin: top left;
+      background: #13161f;
+    }
+
+    .preview-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      background: transparent;
+    }
   </style>
 </head>
 <body>
@@ -927,7 +1013,7 @@
           <span class="tech-tag">HostGator</span>
           <span class="tech-tag">cPanel</span>
         </div>
-        <a href="https://etpassociates.com.ph" target="_blank" class="project-link">↗ etpassociates.com.ph</a>
+        <a href="https://etpassociates.com.ph" target="_blank" class="project-link hover-preview" data-preview="etp_preview.jpg" data-title="ETP Associates" data-url="etpassociates.com.ph">↗ etpassociates.com.ph</a>
       </div>
 
       <!-- Parlance -->
@@ -945,7 +1031,7 @@
           <span class="tech-tag">HostGator</span>
           <span class="tech-tag">Rebuild</span>
         </div>
-        <a href="https://parlancebiz.com.ph" target="_blank" class="project-link">↗ parlancebiz.com.ph</a>
+        <a href="https://parlancebiz.com.ph" target="_blank" class="project-link hover-preview" data-preview="parlance_preview.jpg" data-title="Parlance Biz" data-url="parlancebiz.com.ph">↗ parlancebiz.com.ph</a>
       </div>
 
       <!-- Buzztech -->
@@ -1110,6 +1196,113 @@
     navLinks.forEach(a => {
       a.style.color = a.getAttribute('href') === '#' + current
         ? 'var(--amber)' : '';
+    });
+  });
+
+  // Hover website preview panel
+  document.addEventListener('DOMContentLoaded', () => {
+    const previewLinks = document.querySelectorAll('.hover-preview');
+    if (!previewLinks.length) return;
+
+    // Create preview panel element
+    const panel = document.createElement('div');
+    panel.className = 'preview-panel';
+    panel.innerHTML = `
+      <div class="preview-header">
+        <div class="preview-dots">
+          <span class="preview-dot red"></span>
+          <span class="preview-dot yellow"></span>
+          <span class="preview-dot green"></span>
+        </div>
+        <div class="preview-title">Loading...</div>
+      </div>
+      <div class="preview-body">
+        <div class="preview-overlay"></div>
+        <iframe src="" class="preview-iframe" scrolling="no" loading="lazy"></iframe>
+      </div>
+    `;
+    document.body.appendChild(panel);
+
+    const previewIframe = panel.querySelector('.preview-iframe');
+    const previewTitle = panel.querySelector('.preview-title');
+    let hideTimeout;
+    let activeUrl = '';
+
+    // Click on panel redirects to the website URL
+    panel.addEventListener('click', () => {
+      if (activeUrl) {
+        window.open(activeUrl, '_blank');
+      }
+    });
+
+    previewLinks.forEach(link => {
+      link.addEventListener('mouseenter', () => {
+        clearTimeout(hideTimeout);
+        const url = link.getAttribute('href');
+        const title = link.getAttribute('data-title') || link.getAttribute('data-url');
+        
+        activeUrl = url;
+        
+        // Only update source if changed
+        if (previewIframe.src !== url) {
+          previewTitle.textContent = "Loading " + title + "...";
+          previewIframe.src = url;
+        } else {
+          previewTitle.textContent = title;
+        }
+
+        // Position the panel
+        const linkRect = link.getBoundingClientRect();
+        const scrollX = window.scrollX || window.pageXOffset;
+        const scrollY = window.scrollY || window.pageYOffset;
+
+        // Center panel horizontally above the link
+        const panelWidth = 320;
+        const panelHeight = 216; // 36px header/padding + 180px body height
+
+        let left = linkRect.left + (linkRect.width / 2) - (panelWidth / 2) + scrollX;
+        let top = linkRect.top - panelHeight - 12 + scrollY; // 12px space above link
+
+        // Bounds checking (keep within window bounds)
+        if (left < 10) left = 10;
+        if (left + panelWidth > window.innerWidth - 10) {
+          left = window.innerWidth - panelWidth - 10;
+        }
+
+        // If there's no space above, show it below the link instead
+        if (linkRect.top - panelHeight - 12 < 0) {
+          top = linkRect.bottom + 12 + scrollY;
+        }
+
+        panel.style.left = `${left}px`;
+        panel.style.top = `${top}px`;
+        panel.classList.add('show');
+      });
+
+      link.addEventListener('mouseleave', () => {
+        hideTimeout = setTimeout(() => {
+          panel.classList.remove('show');
+        }, 150); // Small delay to prevent flickering
+      });
+    });
+
+    // Support hovering directly over the popup window to click it or see it
+    panel.addEventListener('mouseenter', () => {
+      clearTimeout(hideTimeout);
+    });
+
+    panel.addEventListener('mouseleave', () => {
+      hideTimeout = setTimeout(() => {
+        panel.classList.remove('show');
+      }, 150);
+    });
+
+    // When the iframe finishes loading, set title to normal
+    previewIframe.addEventListener('load', () => {
+      const matchedLink = Array.from(previewLinks).find(l => l.getAttribute('href') === previewIframe.src);
+      if (matchedLink) {
+        previewTitle.textContent = matchedLink.getAttribute('data-title') || matchedLink.getAttribute('data-url');
+      }
     });
   });
 </script>
